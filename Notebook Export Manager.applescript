@@ -8,6 +8,7 @@
 -- but not with the Apple Mac App Store version 10 which doesn't
 -- support AppleScript at this time (Feb 2021).
 -- Runs successfully on macOS Catalina (10.15.7) and Big Sur (11.1) with Evernote 7.14
+-- 0.4.2 fix locale problem caused by date in string literal
 
 -- To get Finder write
 use scripting additions
@@ -72,7 +73,7 @@ set SearchString to "" -- assume no user-supplied search string
 set ExportAsHTML to true -- Export notebooks in HTML format
 set ExportAsENEX to true -- Export notebooks in ENEX format
 set BooksSelected to {} -- List of notebooks to export
-set ExportDate to date "Saturday, January 1, 2000 at 12:00:00 AM" -- No exports have been done yet
+set ExportDate to initDate(2000, 1, 1) -- No exports have been done yet  0.4.2
 set TimeoutMinutes to 30 -- Default timeout
 
 -- Wake up Evernote and then switch back to this script
@@ -273,8 +274,8 @@ on buildNoteIndex(bookName, outHTML, wasExported)
 	local aNoteAuthor, aNoteExporter, fOff, lOff, sz, expStamp, priorEnviron, priorExportDate
 	local ourTimer, bookNotes, bookFiles
 	-- tell application "Evernote" to set bookType to the notebook type of notebook bookName -- get type of notebook
-	set bookMod to date "Saturday, January 1, 2000 at 12:00:00 AM" -- default book mod date
-	set bookCreate to date "Sunday, January 1, 2040 at 12:00:00 AM" -- default book create date
+	set bookMod to initDate(2000, 1, 1) -- default book mod date  0.4.2
+	set bookCreate to initDate(2040, 1, 1) -- default book create date  0.4.2
 	set htmlNotes to "" -- Building HTML for Notes list
 	set tagRows to "" -- Building HTML for rows with Tag info
 	set bookNotes to 0 -- init count of notes in this notebook
@@ -760,12 +761,25 @@ end tzone
 --
 on getDateMeta(x)
 	local d
-	set d to date "Saturday, January 1, 2000 at 12:00:00 AM"
+	set d to initDate(2000, 1, 1) -- 0.4.2
 	if x = "" then return d
 	tell d to set {its year, its month, its day, its time} to {0 + (text 1 thru 4 of x), 0 + (text 6 thru 7 of x), 0 + (text 9 thru 10 of x), (hours * (0 + (text 12 thru 13 of x))) + (minutes * (0 + (text 15 thru 16 of x))) + (0 + (text 18 thru 19 of x))} -- 
 	set d to d + (hours * (text 22 thru 23 of x)) + (0 + (text 24 thru 25 of x)) * (cond((text 21 thru 21 of x) = "-", -1, 1)) + (time to GMT)
 	return d
 end getDateMeta
+-- 0.4.2 ....
+-- Initialize a date object
+-- input is year, month, day as integers
+-- returns date object
+-- Avoids locale-related issues with dates in strings
+-- 
+on initDate(yr, mo, dy) -- 0.4.2
+	local md
+	set md to current date
+	tell md to set {its year, its month, its day, its time} to {yr, mo, dy, hours * 12}
+	return md
+end initDate
+-- .... 0.4.2
 -- 
 -- Return a date object in local time
 -- input is a date/time string as in our bookexported comment
@@ -781,7 +795,7 @@ on getDateSrch(x)
 		use framework "Foundation"
 		on getDateSrch(x)
 			local df, theDate, tz, theOffset, d
-			if x = "" then return date "Saturday, January 1, 2000 at 12:00:00 AM"
+			if x = "" then return initDate(2000, 1, 1) -- 0.4.2
 			set df to current application's NSDateFormatter's new()
 			df's setDateFormat:"yyyyMMdd'T'HHmmssX" -- Pattern date
 			set theDate to df's dateFromString:x
@@ -790,7 +804,7 @@ on getDateSrch(x)
 			set theOffset to tz's secondsFromGMTForDate:theDate
 			-- I should be able to add theDate to theOffset, but Applescript could not seem to
 			-- constrain theDate from NSDate to Date.  So, I'm converting it another way....
-			set d to date "Saturday, January 1, 2000 at 12:00:00 AM" -- create a date variable
+			set d to current date -- create a date variable  0.4.2
 			tell d to set {its year, its month, its day, its time} to {0 + (text 1 thru 4 of x), 0 + (text 5 thru 6 of x), 0 + (text 7 thru 8 of x), (hours * (0 + (text 10 thru 11 of x))) + (minutes * (0 + (text 12 thru 13 of x))) + (0 + (text 14 thru 15 of x))} -- convert date string to date object
 			set d to d + theOffset -- adjust GMT time string to local time
 			return d -- return date in our time zone
