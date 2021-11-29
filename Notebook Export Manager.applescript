@@ -9,6 +9,8 @@
 -- support AppleScript at this time (Feb 2021).
 -- Runs successfully on macOS Catalina (10.15.7) and Big Sur (11.1) with Evernote 7.14
 -- 0.4.2 fix locale problem caused by date in string literal
+-- 0.5.0 fix file Kind search for macOS Monterery (12.0.1): HTML files on disk now
+--       show file Kind "HTML document", not "HTML text"
 
 -- To get Finder write
 use scripting additions
@@ -288,7 +290,7 @@ on buildNoteIndex(bookName, outHTML, wasExported)
 	try
 		-- tell application "Finder" to set listNoteFiles to every item of (POSIX file outHTML as alias) whose ((kind is "HTML text") and (name ≠ nbIndexFile)) -- comment 0.3.5
 		set yy to alias (outHTML as POSIX file)
-		tell application "System Events" to set listNoteFiles to ((every file of yy) whose ((kind is "HTML text") and (name ≠ nbIndexFile))) -- get every note html file 0.3.5
+		tell application "System Events" to set listNoteFiles to ((every file of yy) whose (((kind is "HTML text") or (kind is "HTML document")) and (name ≠ nbIndexFile))) -- get every note html file 0.5.0
 	on error
 		return -- if no files found, return without building the notebook index
 	end try
